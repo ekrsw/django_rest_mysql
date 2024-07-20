@@ -1,0 +1,43 @@
+version: "3.9"
+services:
+  db:
+    build:
+      context: .
+      dockerfile: containers/mysql/Dockerfile
+    container_name: mysql-container
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "13306:3306"
+    env_file:
+      - .env
+    healthcheck:
+      test: "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD"
+      # ヘルスチェックのインターバルは10秒
+      interval: 10s
+      # タイムアウト時間は10秒
+      timeout: 10s
+      # リトライ回数は3回
+      retries: 3
+      # ヘルスチェックが失敗しても無視する時間は60秒
+      start_period: 60s
+
+  app:
+    build:
+      context: .
+      dockerfile: containers/django/Dockerfile
+    container_name: django-rest-container
+    volumes:
+      - .:/app
+      - ./static:/static
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    command: sh /app/entrypoint.sh
+volumes:
+  db_data:
+  static:
