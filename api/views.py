@@ -2,14 +2,19 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from .serializers import ItemSerializer
 from rest_framework import status
+from .models import Item
 
 
 class ItemView(APIView):
 
     serializer_class = ItemSerializer
 
-    def get(self, request):
-        return Response({'method': 'get'})
+    def get(self, request): # 一覧(http://127.0.0.1:8000/api/item/)
+        items = Item.objects.all()
+        serializer = ItemSerializer(items, many=True)
+        # print(items)
+        # print(serializer.data)
+        return Response(serializer.data)
     
     def post(self, request):
         print(request.data)
@@ -31,3 +36,13 @@ class ItemView(APIView):
 
     def patch(self, request):
         return Response({'method': 'patch'})
+
+
+class ItemDetailView(APIView):
+    
+    serializer_class = ItemSerializer
+
+    def get(self, request, pk):
+        item = Item.objects.get(pk=pk)
+        serializer = self.serializer_class(item)
+        return Response(serializer.data)
