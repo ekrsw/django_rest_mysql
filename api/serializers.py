@@ -7,6 +7,7 @@ def check_divide_by_ten(value):
         raise serializers.ValidationError("10で割り切れる値にしてください")
 
 class ItemSerializer(serializers.Serializer):
+    pk = serializers.ReadOnlyField()
     name = serializers.CharField(max_length=20)
     price = serializers.IntegerField(min_value=0)
     discounted_price = serializers.IntegerField(min_value=0, 
@@ -14,6 +15,8 @@ class ItemSerializer(serializers.Serializer):
                                                 )
 
     def validate_price(self, value):
+        if self.partial and value is None:
+            return value
         print(f"price: {value}")
         # 1桁目が0以外を弾く
         if value % 10 != 0:
@@ -29,8 +32,8 @@ class ItemSerializer(serializers.Serializer):
     
     def validate(self, data):
         print(f"data: {data}")
-        price = data.get('price')
-        discounted_price = data.get('discounted_price')
+        price = data.get('price', self.instance.price if self.instance is not None else None)
+        discounted_price = data.get('discounted_price', self.instance.discounted_price if self.instance is not None else None)
         if price < discounted_price:
             raise serializers.ValidationError("割引価格は元の価格よりも低くすること")
         return data
@@ -41,6 +44,11 @@ class ItemSerializer(serializers.Serializer):
         return Item.objects.create(**validated_data)
     
     def update(self, instance, validated_data):
-        print("updateを実行")
-        print(instance)
-        print(validated_data)
+        # print("updateを実行")
+        # print(instance)
+        # print(validated_data)
+        instance.name = validated_data.get('name', instance.name)
+        instance.price = validated_data.get('price', instance.price)
+        instance.discounted_price = validated_data.get('discounted_price', instance.discounted_price)
+        instance.save()
+        return instance
